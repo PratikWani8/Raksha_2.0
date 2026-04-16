@@ -17,7 +17,6 @@ import routeRoutes from "./routes/routeRoutes.js"
 import FIRRoutes from "./routes/firRoute.js"
 import videoRoutes from "./routes/videoRoutes.js"
 import progressRoutes from "./routes/progressRoutes.js"
-import systemStatusRoutes from "./routes/systemStatusRoutes.js"
 
 dotenv.config()
 
@@ -58,7 +57,7 @@ app.use("/api", routeRoutes)
 app.use("/api/fir", FIRRoutes)
 app.use("/api/videos", videoRoutes)
 app.use("/api/progress", progressRoutes)
-app.use("/api", systemStatusRoutes)
+
 
 // ROOT API
 app.get("/", (req,res)=>{
