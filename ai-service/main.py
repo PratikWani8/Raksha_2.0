@@ -5,7 +5,9 @@ import numpy as np
 import requests
 from fastapi.middleware.cors import CORSMiddleware
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+import re
 from sklearn.naive_bayes import MultinomialNB
 from datetime import datetime
 import os
@@ -117,70 +119,103 @@ def future_hotspots():
 
     return grid
 
-# FIR NLP 
+# FIR NLP
 texts = [
-"he was following me stalking",
-"someone attacked me and hit me",
-"he touched me wrongly harassment",
-"my phone was stolen theft",
-"someone tried to kidnap me",
-"otp fraud message",
-"online scam money deducted",
-"phishing link stole password"
+    # Stalking
+    "he was following me continuously",
+    "someone is tracking me daily",
+    "man keeps stalking me outside my house",
+
+    # Assault
+    "he attacked me and punched me",
+    "someone hit me badly",
+    "physical attack happened",
+
+    # Harassment
+    "he touched me inappropriately",
+    "someone harassed me verbally",
+    "man misbehaved with me",
+
+    # Theft
+    "my phone got stolen",
+    "someone took my wallet",
+    "bike theft happened",
+
+    # Kidnapping
+    "someone tried to kidnap me",
+    "child kidnapping attempt",
+    "forced into a car",
+
+    # Cybercrime
+    "otp fraud happened",
+    "phishing link stole my password",
+    "money deducted due to scam",
+    "online fraud transaction",
+    "my phone got hacked",
+    "my account got hacked"
 ]
 
 labels = [
-"Stalking",
-"Assault",
-"Harassment",
-"Theft",
-"Kidnapping",
-"Cybercrime",
-"Cybercrime",
-"Cybercrime"
+    "Stalking","Stalking","Stalking",
+    "Assault","Assault","Assault",
+    "Harassment","Harassment","Harassment",
+    "Theft","Theft","Theft",
+    "Kidnapping","Kidnapping","Kidnapping",
+    "Cybercrime","Cybercrime","Cybercrime",
+    "Cybercrime","Cybercrime","Cybercrime"
 ]
 
-vectorizer = CountVectorizer()
+# 🔥 Preprocessing function
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    return text
 
-X = vectorizer.fit_transform(texts)
+cleaned_texts = [clean_text(t) for t in texts]
 
+# 🔥 TF-IDF with n-grams
+vectorizer = TfidfVectorizer(
+    ngram_range=(1,2),  # captures phrases
+    stop_words='english'
+)
+
+X = vectorizer.fit_transform(cleaned_texts)
+
+# 🔥 Model
 nlp_model = MultinomialNB()
+nlp_model.fit(X, labels)
 
-nlp_model.fit(X,labels)
-
+# 🔥 API
 @app.post("/nlp")
-
-def classify(data:dict = Body(...)):
-
-    text = data["text"]
-
+def classify(data: dict = Body(...)):
+    text = clean_text(data["text"])
     vec = vectorizer.transform([text])
+
+    probs = nlp_model.predict_proba(vec)[0]
+    confidence = max(probs)
+
+    if confidence < 0.25:
+        return {
+            "type": "Unclear",
+            "ipc": "Manual review required",
+            "confidence": float(confidence)
+        }
 
     crime = nlp_model.predict(vec)[0]
 
-    ipc = ""
-
-    if crime == "Harassment":
-        ipc = "IPC 354, IPC 509"
-
-    elif crime == "Stalking":
-        ipc = "IPC 354D"
-
-    elif crime == "Assault":
-        ipc = "IPC 351, IPC 352"
-
-    elif crime == "Theft":
-        ipc = "IPC 379"
-
-    elif crime == "Kidnapping":
-        ipc = "IPC 363"
-
-    elif crime == "Cybercrime":
-        ipc = "IT Act 66, 66C, 66D"
+    ipc_map = {
+        "Harassment": "IPC 354, IPC 509",
+        "Stalking": "IPC 354D",
+        "Assault": "IPC 351, IPC 352",
+        "Theft": "IPC 379",
+        "Kidnapping": "IPC 363",
+        "Cybercrime": "IT Act 66, 66C, 66D"
+    }
 
     return {
-        "type":crime,
-        "ipc":ipc
+        "type": crime,
+        "ipc": ipc_map.get(crime, ""),
+        "confidence": float(confidence)
     }
 
 # AI SURVEILLANCE MODEL
