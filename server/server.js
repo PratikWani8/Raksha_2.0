@@ -6,6 +6,7 @@ import { Server } from "socket.io"
 import axios from "axios"
 import connectDB from "./config/db.js"
 import authRoutes from "./routes/authRoutes.js"
+import userRoutes from "./routes/userRoutes.js"
 import addressRoutes from "./routes/addressRoutes.js"
 import complaintRoutes from "./routes/complaintRoutes.js"
 import sosRoutes from "./routes/sosRoutes.js"
@@ -14,6 +15,8 @@ import heatmapRoutes from "./routes/heatmapRoutes.js"
 import futureRoutes from "./routes/futureRoutes.js"
 import routeRoutes from "./routes/routeRoutes.js"
 import FIRRoutes from "./routes/firRoute.js"
+import videoRoutes from "./routes/videoRoutes.js"
+import progressRoutes from "./routes/progressRoutes.js"
 import systemStatusRoutes from "./routes/systemStatusRoutes.js"
 
 dotenv.config()
@@ -43,17 +46,18 @@ app.use((req,res,next)=>{
 
 // ROUTES 
 app.use("/api/auth", authRoutes)
+app.use("/api/users", userRoutes)
 app.use("/api", addressRoutes)
 app.use("/api/complaints", complaintRoutes)
 app.use("/uploads", express.static("uploads"))
-
 app.use("/api/sos", sosRoutes)
 app.use("/api/guest-sos", guestSOSRoutes)
-
 app.use("/api", heatmapRoutes)
 app.use("/api", futureRoutes)
 app.use("/api", routeRoutes)
 app.use("/api/fir", FIRRoutes)
+app.use("/api/videos", videoRoutes)
+app.use("/api/progress", progressRoutes)
 app.use("/api", systemStatusRoutes)
 
 // ROOT API
