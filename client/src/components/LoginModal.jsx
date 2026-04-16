@@ -41,7 +41,7 @@ const password = formData.get("password")
 try{
 
 const res = await fetch(
-"http://localhost:5000/api/auth/login",
+"https://raksha-server.onrender.com/api/auth/login",
 {
 method:"POST",
 headers:{
@@ -96,7 +96,7 @@ const result = await signInWithPopup(auth,provider)
 const user = result.user
 
 const res = await fetch(
-"http://localhost:5000/api/auth/google-register",
+"https://raksha-server.onrender.com/api/auth/google-register",
 {
 method:"POST",
 headers:{
