@@ -2,7 +2,7 @@ const CoursePlayer = ({ video }) => {
   if (!video) return <div>Select a video</div>
 
   return (
-    <div className="w-full h-[400px]">
+    <div className="w-full h-100">
       <iframe
         className="w-full h-full rounded-xl"
         src={video.url}
