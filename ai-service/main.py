@@ -8,7 +8,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 import re
-from sklearn.naive_bayes import MultinomialNB
 from datetime import datetime
 import os
 import base64
