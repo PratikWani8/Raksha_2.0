@@ -8,7 +8,7 @@ import {
   Hand,
   AlertTriangle,
 } from "lucide-react";
-
+import GroqChatbot from "../components/GroqChatbot";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import safetyImg from "../assets/safety.png";
@@ -109,7 +109,7 @@ function Safety() {
           </motion.div>
         ))}
       </section>
-
+      <GroqChatbot />
       <Footer />
     </motion.div>
   );
