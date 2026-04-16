@@ -50,12 +50,11 @@ else {
   utterance.lang = "en-IN"
 }
 
- utterance.rate = 0.95   // slower = clearer accent
-  utterance.pitch = 1.15  // softer female tone
+ utterance.rate = 0.95  
+  utterance.pitch = 1.15  
 
   const voices = speechSynthesis.getVoices()
 
-  // PRIORITY VOICE SELECTION (BEST ACCENT)
   const preferredVoices = [
     "Google हिन्दी",
     "Google Indian English",
@@ -74,7 +73,6 @@ else {
     )
   }
 
-  // Fallback to any female-like voice
   if (!selectedVoice) {
     selectedVoice = voices.find(v =>
       v.name.toLowerCase().includes("female") ||
@@ -83,7 +81,6 @@ else {
     )
   }
 
-  // Final fallback
   if (!selectedVoice) selectedVoice = voices[0]
 
   utterance.voice = selectedVoice
@@ -92,7 +89,6 @@ else {
   speechSynthesis.speak(utterance)
 }
 
-  // CONTINUOUS VOICE INPUT
   const startVoiceInput = () => {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
 
@@ -116,7 +112,6 @@ else {
     }
   }
 
-  // VOICE MESSAGE HANDLER
   const sendMessageFromVoice = async (voiceText) => {
     if (!voiceText.trim() || loading) return
 
@@ -190,7 +185,6 @@ Behavior:
     }
   }
 
-  // NORMAL TEXT MESSAGE
   const sendMessage = async () => {
     if (!input.trim() || loading) return
 
