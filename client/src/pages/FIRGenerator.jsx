@@ -2,9 +2,12 @@ import { useState,useEffect } from "react"
 import axios from "axios"
 import { motion } from "framer-motion"
 import { Upload } from "lucide-react"
+import Tesseract from "tesseract.js"
+import Swal from "sweetalert2"
 import { jsPDF } from "jspdf"
 import SignatureCanvas from "react-signature-canvas"
 import { useRef } from "react"
+import { FileText, Download, Send } from "lucide-react"
 import policeLogo from "../assets/policeLogo.png"
 
 export default function FIRGenerator(){
@@ -14,6 +17,7 @@ const [name,setName] = useState("")
 const [phone,setPhone] = useState("")
 const [location,setLocation] = useState("")
 const [description,setDescription] = useState("")
+const [firSrNo, setFirSrNo] = useState("")
 const [crimeType,setCrimeType] = useState("")
 const [ipc,setIPC] = useState("")
 const [output,setOutput] = useState("")
@@ -21,6 +25,7 @@ const [lang,setLang] = useState("en")
 const [recording,setRecording] = useState(false)
 const [file,setFile] = useState(null)
 const [fileName,setFileName] = useState("")
+const [ocrEnabled, setOcrEnabled] = useState(true)
 const sigRef = useRef()
 const [submitted,setSubmitted] = useState(false)
 
@@ -123,27 +128,78 @@ setRecording(false)
 }
 
 // FILE UPLOAD 
-const handleFile = (e)=>{
+const handleFile = async (e) => {
 
-const file = e.target.files[0]
+  const file = e.target.files[0]
+  if (!file) return
 
-if(!file) return
+  const allowed = ["image/jpeg","image/png","audio/mpeg"]
 
-const allowed = ["image/jpeg","image/png","audio/mpeg"]
+  if (!allowed.includes(file.type)) {
+    Swal.fire("Invalid File","Only image/audio allowed","error")
+    return
+  }
 
-if(!allowed.includes(file.type)){
-Swal.fire("Invalid File","Only image/audio allowed","error")
-return
-}
+  if (file.size > 2 * 1024 * 1024) {
+    Swal.fire("File too large","Max size is 2MB","error")
+    return
+  }
 
-if(file.size > 2 * 1024 * 1024){
-Swal.fire("File too large","Max size is 2MB","error")
-return
-}
+  setFile(file)
+  setFileName(file.name)
 
-setFile(file)
-setFileName(file.name)
+// ocr
+  if (!ocrEnabled || !file.type.startsWith("image")) return
 
+  try {
+
+    Swal.fire({
+      title: "Scanning Image...",
+      text: "Extracting text using OCR",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    })
+
+    const imageUrl = URL.createObjectURL(file)
+
+    const { data } = await Tesseract.recognize(
+      imageUrl,
+      "eng", 
+      {
+        logger: m => console.log(m)
+      }
+    )
+
+    // 
+    const extractedText = data.text
+      .replace(/\n/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+
+    console.log("OCR TEXT:", extractedText)
+
+    if (!extractedText || extractedText.length < 5) {
+      Swal.fire("No Text Found","Try clearer image","warning")
+      return
+    }
+
+    setDescription(prev => prev + " " + extractedText)
+
+    // nlp for crime detection
+    const res = await axios.post(
+      "http://localhost:8000/nlp",
+      { text: extractedText }
+    )
+
+    setCrimeType(res.data.type)
+    setIPC(res.data.ipc)
+
+    Swal.fire("Success","Text extracted & crime detected","success")
+
+  } catch (err) {
+    console.log(err)
+    Swal.fire("Error","OCR failed","error")
+  }
 }
 
 // Generate FIR
@@ -648,7 +704,6 @@ alert("Please add signature before downloading FIR")
 return
 }
 
-// calculate end of FIR text
 const pageHeight = doc.internal.pageSize.height
 const finalY = 75 + (lines.length * 6)
 
@@ -714,9 +769,9 @@ setSubmitted(false)
 
 }
 
-return(
+return (
 
-<div className="min-h-screen bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200 flex items-center justify-center p-6">
+<div className="min-h-screen bg-linear-to-br from-blue-200 via-purple-200 to-pink-200 flex items-center justify-center p-6">
 
 <motion.div
 initial={{opacity:0,scale:0.9}}
@@ -745,12 +800,17 @@ AI Assisted FIR Registration
 
 </div>
 
+{/* INPUTS */}
+<div className="space-y-3">
+
 <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Complainant Name" className="input"/>
 <input value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="Phone Number" className="input"/>
 <input value={location || ""} onChange={(e)=>setLocation(e.target.value)} placeholder="Incident Location" className="input"/>
 
+</div>
+
 {/* INCIDENT DESCRIPTION */}
-<div className="relative">
+<div className="relative mt-3">
 
 <textarea
 value={description}
@@ -761,8 +821,8 @@ className="input h-40 pr-14"
 
 <button
 onClick={startVoice}
-className={`absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md
-${recording ? "bg-red-600 animate-pulse" : "bg-blue-600"}
+className={`absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md transition
+${recording ? "bg-red-600 animate-pulse scale-110" : "bg-blue-600 hover:scale-105"}
 `}
 >
 
@@ -774,20 +834,20 @@ ${recording ? "bg-red-600 animate-pulse" : "bg-blue-600"}
 </button>
 </div>
 
-{/* FILE UPLOAD */}
-<div>
+{/* FILE UPLOAD & OCR TOGGLE */}
+<div className="mt-4">
 
-<label className="font-medium block mb-1">
+<label className="font-medium block mb-2">
 Upload Evidence
 </label>
 
-<label className="flex items-center justify-center gap-2 border border-dashed border-pink-400 rounded-lg p-3 cursor-pointer hover:bg-pink-50 transition">
+<div className="flex gap-3">
+
+{/* Upload Button */}
+<label className="w-1/2 flex items-center justify-center gap-2 border border-dashed border-pink-400 rounded-lg p-3 cursor-pointer hover:bg-pink-50 transition">
 
 <Upload size={18}/>
-
-<span className="text-sm">
-Upload Image / Audio
-</span>
+<span className="text-sm">Upload</span>
 
 <input
 type="file"
@@ -798,21 +858,59 @@ className="hidden"
 
 </label>
 
+{/* OCR Toggle */}
+<div className="w-1/2 flex items-center justify-between bg-gray-100 px-3 rounded-lg">
+
+<span className="text-sm font-medium">OCR</span>
+
+<div
+onClick={() => setOcrEnabled(!ocrEnabled)}
+className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition
+${ocrEnabled ? "bg-green-500" : "bg-gray-400"}`}
+>
+<div className={`bg-white w-4 h-4 rounded-full shadow transform transition
+${ocrEnabled ? "translate-x-5" : ""}
+`} />
+</div>
+
+</div>
+
+</div>
+
 <p className="text-xs text-gray-500 mt-1">
 Image / Audio only (max 2MB)
 </p>
 
 {fileName && (
-
 <p className="text-xs text-green-600 mt-1">
 📎 Uploaded: {fileName}
 </p>
+)}
 
+{/* Image Preview */}
+{file && file.type.startsWith("image") && (
+<img
+src={URL.createObjectURL(file)}
+alt="preview"
+className="mt-2 w-full h-40 object-cover rounded-lg"
+/>
 )}
 
 </div>
 
-{/* digital sign */}
+{/* CRIME DETECTION DISPLAY */}
+{crimeType && (
+<div className="bg-blue-100 p-3 rounded-lg mt-3">
+<p className="text-sm font-semibold">
+Detected Crime: {crimeType}
+</p>
+<p className="text-xs text-gray-600">
+IPC: {ipc}
+</p>
+</div>
+)}
+
+{/* DIGITAL SIGNATURE */}
 <div className="mt-6">
 
 <p className="text-sm font-semibold mb-2">
@@ -835,12 +933,14 @@ className="mt-2 bg-red-500 text-white px-4 py-1 rounded"
 >
 Clear Signature
 </button>
+
 </div>
 
+{/* LANGUAGE */}
 <select
 value={lang}
 onChange={(e)=>setLang(e.target.value)}
-className="input"
+className="input mt-4"
 >
 <option value="en">English</option>
 <option value="hi">Hindi</option>
@@ -852,31 +952,35 @@ className="input"
 <option value="gu">Gujarati</option>
 <option value="pa">Punjabi</option>
 <option value="bn">Bengali</option>
-
 </select>
 
+{/* BUTTONS */}
 <button
-onClick={generateFIR}
-className="w-full bg-blue-700 text-white p-3 rounded-xl mt-3"
+  onClick={generateFIR}
+  disabled={!description}
+  className="w-full bg-blue-700 text-white p-3 rounded-xl mt-3 disabled:bg-gray-400 flex items-center justify-center gap-2"
 >
-Generate FIR
+  <FileText size={20} />
+  <span>Generate FIR</span>
 </button>
 
 <button
-onClick={downloadFIR}
-className="w-full bg-green-600 text-white p-3 rounded-xl mt-3"
+  onClick={downloadFIR}
+  className="w-full bg-green-600 text-white p-3 rounded-xl mt-3 flex items-center justify-center gap-2"
 >
-Download FIR
+  <Download size={20} />
+  <span>Download FIR</span>
 </button>
 
 <button
-onClick={submitFIR}
-className="w-full bg-purple-700 text-white p-3 rounded-xl mt-3"
+  onClick={submitFIR}
+  className="w-full bg-purple-700 text-white p-3 rounded-xl mt-3 flex items-center justify-center gap-2"
 >
-Submit to Police Admin
+  <Send size={20} />
+  <span>Submit to Police Admin</span>
 </button>
 
-{/* SUCCESS TICK */}
+{/* SUCCESS */}
 {submitted && (
 
 <motion.div
@@ -902,6 +1006,7 @@ FIR Submitted Successfully
 
 )}
 
+{/* OUTPUT */}
 <textarea
 value={output}
 readOnly
