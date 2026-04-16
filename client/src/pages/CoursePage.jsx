@@ -91,7 +91,7 @@ const CoursePage = () => {
   const progress = (completed.length / 6) * 100
 
   return (
-    <div className="p-6 bg-gradient-to-br from-pink-50 to-purple-100 min-h-screen">
+    <div className="p-6 bg-linear-to-br from-pink-50 to-purple-100 min-h-screen">
 
       {/* HEADER */}
       <motion.h1
@@ -119,7 +119,7 @@ const CoursePage = () => {
         </div>
 
         {/* VIDEO LIST */}
-        <div className="space-y-3 bg-white p-4 rounded-xl shadow h-[500px] overflow-y-auto">
+        <div className="space-y-3 bg-white p-4 rounded-xl shadow h-125 overflow-y-auto">
           <h2 className="font-semibold mb-2">Course Content</h2>
 
           {videos.map((video) => (
