@@ -1,11 +1,14 @@
 import { useEffect,useRef,useState } from "react"
 import { io } from "socket.io-client"
+import { BASE_URL } from "../api/api"
 import { motion,AnimatePresence } from "framer-motion"
 import { Link } from "react-router-dom"
 
 import sirenSound from "../assets/alert.mp3"
 
-const socket = io("http://localhost:5000")
+const socket = io(BASE_URL, {
+  transports: ["websocket"],
+});
 
 export default function AdminLiveDashboard(){
 
@@ -59,7 +62,6 @@ createPeerConnection(user.socketId)
 return [...prev,user]
 
 })
-
 
 /* ALERT */
 setAlert({
@@ -289,7 +291,6 @@ Logout
 </nav>
 
 </div>
-
 
 {/* MAIN CONTROL ROOM */}
 <div className="flex-1 p-8">
