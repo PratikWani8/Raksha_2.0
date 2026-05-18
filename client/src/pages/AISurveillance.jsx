@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react"
 import io from "socket.io-client"
+import { BASE_URL } from "../api/api"
+import { AI_BASE_URL } from "../api/api";
 
-const socket = io("http://localhost:5000")
+const socket = io(BASE_URL, {
+  transports: ["websocket"],
+});
 
 export default function AISurveillance(){
 
@@ -59,21 +63,23 @@ ctx.drawImage(video,0,0)
 
 const frame = tempCanvas.toDataURL("image/jpeg")
 
-try{
+ try {
 
-const res = await fetch("http://localhost:8000/detect",{
-method:"POST",
-headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({image:frame})
-})
+    const res = await fetch(`${AI_BASE_URL}/detect`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ image: frame }),
+    });
 
-const data = await res.json()
+    const data = await res.json();
 
-drawBoxes(data.detections)
+    drawBoxes(data.detections);
 
-}catch(err){
-console.log("AI detection error")
-}
+  } catch (err) {
+    console.error("Detection error:", err);
+  }
 
 }
 
