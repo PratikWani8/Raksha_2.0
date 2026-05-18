@@ -1,5 +1,5 @@
 import { useEffect,useState } from "react"
-import axios from "axios"
+import API, { BASE_URL } from "../api/api";
 import { motion } from "framer-motion"
 import { Link } from "react-router-dom"
 
@@ -30,27 +30,32 @@ useEffect(()=>{
 loadFIRs()
 },[])
 
-async function loadFIRs(){
+const loadFIRs = async () => {
+  try {
 
-const res = await axios.get("http://localhost:5000/api/fir")
+    const res = await API.get("/api/fir");
 
-setFirs(res.data)
+    setFirs(res.data);
 
-setStats({
-total:res.data.length
-})
+    setStats({
+      total: res.data.length,
+    });
 
-// detect new FIRs (last 24 hours)
-const today = new Date()
+    // detect FIRs created in last 24 hours
+    const today = new Date();
 
-const newCount = res.data.filter(f=>{
-const created = new Date(f.date)
-return today - created < 86400000
-}).length
+    const newCount = res.data.filter((f) => {
+      const created = new Date(f.date);
 
-setNewFIRs(newCount)
+      return today - created < 86400000;
+    }).length;
 
-}
+    setNewFIRs(newCount);
+
+  } catch (err) {
+    console.error("Error loading FIRs:", err);
+  }
+};
 
 const filtered = firs.filter(f=>
 f.name?.toLowerCase().includes(search.toLowerCase())
@@ -350,7 +355,7 @@ onClick={()=>setPreview(null)}
 <div className="p-4 rounded bg-white">
 
 <img
-src={`http://localhost:5000/uploads/${preview}`}
+src={`${BASE_URL}/uploads/${preview}`}
 className="max-w-lg"
 alt="Evidence"
 />
