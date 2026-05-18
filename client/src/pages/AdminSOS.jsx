@@ -1,12 +1,15 @@
 import { useEffect,useState } from "react"
 import io from "socket.io-client"
 import axios from "axios"
+import { BASE_URL } from "../api/api";
 import { MapContainer,TileLayer,Marker,Popup } from "react-leaflet"
 import L from "leaflet"
 import { motion } from "framer-motion"
 import "leaflet/dist/leaflet.css"
 
-const socket = io("http://localhost:5000")
+const socket = io(BASE_URL, {
+  transports: ["websocket"],
+});
 
 const icon = new L.Icon({
 iconUrl:"https://cdn-icons-png.flaticon.com/512/564/564619.png",
@@ -67,7 +70,7 @@ socket.off("sosStopped")
 
 const loadSOS = async()=>{
 
-const res = await axios.get("http://localhost:5000/api/sos/admin")
+const res = await axios.get(`${BASE_URL}/api/sos/admin`)
 
 setAlerts(res.data)
 
