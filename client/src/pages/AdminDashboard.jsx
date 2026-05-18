@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import axios from "axios"
+import API from "../api/api";
 import { motion } from "framer-motion"
 import {
 Pagination,
@@ -109,27 +109,34 @@ loadComplaints()
 loadStats()
 },[])
 
-const loadComplaints = async()=>{
-const res = await axios.get("http://localhost:5000/api/complaints")
-setComplaints(res.data)
-}
+const loadComplaints = async () => {
+  try {
+    const res = await API.get("/api/complaints");
+    setComplaints(res.data);
+  } catch (err) {
+    console.error("Error loading complaints:", err);
+  }
+};
 
-const loadStats = async()=>{
-const res = await axios.get("http://localhost:5000/api/complaints/stats")
-setStats(res.data)
-}
+const loadStats = async () => {
+  try {
+    const res = await API.get("/api/complaints/stats");
+    setStats(res.data);
+  } catch (err) {
+    console.error("Error loading stats:", err);
+  }
+};
 
-const updateStatus = async(id,status)=>{
+const updateStatus = async (id, status) => {
+  try {
+    await API.put(`/api/complaints/${id}/status`, { status });
 
-await axios.put(
-`http://localhost:5000/api/complaints/${id}/status`,
-{status}
-)
-
-loadComplaints()
-loadStats()
-
-}
+    // reload data after update
+    await Promise.all([loadComplaints(), loadStats()]);
+  } catch (err) {
+    console.error("Error updating status:", err);
+  }
+};
 
 /* SEARCH */
 const filtered = complaints.filter(c=>{
