@@ -3,7 +3,8 @@ import { motion } from "framer-motion"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import "leaflet.heat"
-import axios from "axios"
+import { BASE_URL } from "../api/api"
+import { AI_API } from "../api/api"
 import io from "socket.io-client"
 
 // leaflet marker icon
@@ -17,7 +18,9 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 })
 
-const socket = io("http://localhost:5000")
+const socket = io(BASE_URL, {
+  transports: ["websocket"],
+});
 
 export default function Heatmap() {
 
@@ -75,56 +78,71 @@ export default function Heatmap() {
   }, [])
 
   // LOAD CURRENT HEATMAP
-  useEffect(() => {
+ useEffect(() => {
 
-    if (!mapLoaded) return
+  if (!mapLoaded) return;
 
-    axios.get("http://localhost:5000/api/heatmap")
+  const loadHeatmap = async () => {
 
-      .then(res => {
+    try {
 
-        const points = res.data.map(p => [
-          p.lat,
-          p.lng,
-          p.score
-        ])
+      const res = await API.get("/api/heatmap");
 
-        heatRef.current.setLatLngs(points)
+      const points = res.data.map((p) => [
+        p.lat,
+        p.lng,
+        p.score,
+      ]);
 
-      })
+      heatRef.current.setLatLngs(points);
 
-      .catch(err => {
-        console.log("Heatmap error:", err)
-      })
+    } catch (err) {
 
-  }, [mapLoaded])
+      console.log("Heatmap error:", err);
+
+    }
+  };
+
+  loadHeatmap();
+
+}, [mapLoaded]);
 
   // LOAD FUTURE HOTSPOTS
-  useEffect(() => {
+ useEffect(() => {
 
-    if (!mapLoaded) return
+  if (!mapLoaded) return;
 
-    axios.get("http://localhost:5000/api/future-hotspots")
+  const loadFutureHotspots = async () => {
 
-      .then(res => {
+    try {
 
-        const futurePoints = res.data.map(p => [
-          p.lat,
-          p.lng,
-          p.score
-        ])
+      const res = await API.get(
+        "/api/future-hotspots"
+      );
 
-        futureHeatRef.current.setLatLngs(futurePoints)
-        drawFutureWaves(res.data)
+      const futurePoints = res.data.map((p) => [
+        p.lat,
+        p.lng,
+        p.score,
+      ]);
 
-      })
+      futureHeatRef.current.setLatLngs(futurePoints);
 
-      .catch(err => {
-        console.log("Future prediction error:", err)
-      })
+      drawFutureWaves(res.data);
 
-  }, [mapLoaded])
+    } catch (err) {
 
+      console.log(
+        "Future prediction error:",
+        err
+      );
+
+    }
+  };
+
+  loadFutureHotspots();
+
+}, [mapLoaded]);
 
 function drawFutureWaves(data){
 
@@ -225,34 +243,39 @@ opacity = 0.8
         // AI RISK CHECK
         try {
 
-          const res = await axios.post(
-            "http://localhost:5000/api/predict",
-            { lat, lng }
-          )
+  const res = await AI_API.post(
+    "/predict",
+    { lat, lng }
+  );
 
-          const risk = res.data.risk
+  const risk = res.data.risk;
 
-          const now = Date.now()
+  const now = Date.now();
 
-          if (risk > 0.7 && now - lastWarning.current > 30000) {
+  if (
+    risk > 0.7 &&
+    now - lastWarning.current > 30000
+  ) {
 
-            lastWarning.current = now
+    lastWarning.current = now;
 
-            alert("🚨 Dangerous Area")
+    alert("🚨 Dangerous Area");
 
-            const msg = new SpeechSynthesisUtterance(
-              "Warning. You are entering a dangerous area"
-            )
+    const msg = new SpeechSynthesisUtterance(
+      "Warning. You are entering a dangerous area"
+    );
 
-            speechSynthesis.speak(msg)
+    speechSynthesis.speak(msg);
+  }
 
-          }
+} catch (err) {
 
-        } catch (err) {
+  console.log(
+    "AI error:",
+    err.message
+  );
 
-          console.log("AI error:", err.message)
-
-        }
+}
 
       },
 
@@ -273,7 +296,6 @@ opacity = 0.8
     }
 
   }, [])
-
 
   return (
 
