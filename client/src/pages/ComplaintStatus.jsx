@@ -2,6 +2,7 @@ import { useEffect,useState } from "react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { FileText,CheckCircle,Clock,Search } from "lucide-react"
+import { BASE_URL } from "../api/api"
 
 export default function ComplaintStatus(){
 
@@ -11,13 +12,21 @@ const navigate = useNavigate()
 const username = localStorage.getItem("username")
 
 /* FETCH COMPLAINTS */
-const loadComplaints = ()=>{
+const loadComplaints = async () => {
+  try {
 
-fetch(`http://localhost:5000/api/complaints/user/${username}`)
-.then(res=>res.json())
-.then(data=>setComplaints(data))
+    const res = await fetch(
+      `${BASE_URL}/api/complaints/user/${username}`
+    );
 
-}
+    const data = await res.json();
+
+    setComplaints(data);
+
+  } catch (err) {
+    console.error("Error loading complaints:", err);
+  }
+};
 
 /* LIVE REFRESH EVERY 5 SECONDS */
 useEffect(()=>{
@@ -30,7 +39,6 @@ return ()=>clearInterval(interval)
 
 },[])
 
-
 /* STATUS ICON */
 const getIcon = (status)=>{
 
@@ -39,7 +47,6 @@ if(status==="Under Investigation") return <Search size={18} className="text-blue
 if(status==="Resolved") return <CheckCircle size={18} className="text-green-600"/>
 
 }
-
 
 /* PROGRESS WIDTH */
 const progressWidth = (status)=>{
@@ -93,7 +100,6 @@ className="p-4 border rounded-lg mb-5"
 {c.incident_type}
 </p>
 
-
 {/* STATUS */}
 <div className="flex items-center gap-2 mt-2">
 
@@ -104,7 +110,6 @@ className="p-4 border rounded-lg mb-5"
 </span>
 
 </div>
-
 
 {/* PROGRESS BAR */}
 <div className="w-full bg-gray-200 h-2 rounded-full mt-3">
