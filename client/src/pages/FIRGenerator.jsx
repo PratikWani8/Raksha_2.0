@@ -1,5 +1,6 @@
 import { useState,useEffect } from "react"
-import axios from "axios"
+import API from "../api/api"
+import { AI_API } from "../api/api"
 import { motion } from "framer-motion"
 import { Upload } from "lucide-react"
 import Tesseract from "tesseract.js"
@@ -30,34 +31,35 @@ const sigRef = useRef()
 const [submitted,setSubmitted] = useState(false)
 
 // Fetch user profile
-useEffect(()=>{
+useEffect(() => {
 
-async function loadUser(){
+  async function loadUser() {
 
-try{
-const token = localStorage.getItem("token")
+    try {
 
-const res = await axios.get(
-"http://localhost:5000/api/auth/profile",
-{
-headers:{
-Authorization:`Bearer ${token}`
-}
-}
-)
+      const token = localStorage.getItem("token");
 
-setUserNo(res.data.userNo)
-setName(res.data.name)
-setPhone(res.data.phone)
+      const res = await API.get(
+        "/api/auth/profile",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-}catch(err){
-console.log(err)
-}
-}
+      setUserNo(res.data.userNo);
+      setName(res.data.name);
+      setPhone(res.data.phone);
 
-loadUser()
+    } catch (err) {
+      console.log("Profile fetch error:", err);
+    }
+  }
 
-},[])
+  loadUser();
+
+}, []);
 
 // Get location
 useEffect(()=>{
@@ -68,20 +70,21 @@ async pos=>{
 const lat = pos.coords.latitude
 const lng = pos.coords.longitude
 
-try{
+try {
 
-const res = await axios.get(
-`http://localhost:5000/api/address?lat=${lat}&lng=${lng}`
-)
+  const res = await API.get(
+    `/api/address?lat=${lat}&lng=${lng}`
+  );
 
-setLocation(res.data.place || `${lat}, ${lng}`)
+  setLocation(
+    res.data.place || `${lat}, ${lng}`
+  );
 
-}catch(err){
+} catch (err) {
 
-console.log(err)
+  console.log("Address fetch error:", err);
 
-setLocation(`${lat}, ${lng}`)
-
+  setLocation(`${lat}, ${lng}`);
 }
 
 },
@@ -186,10 +189,10 @@ const handleFile = async (e) => {
     setDescription(prev => prev + " " + extractedText)
 
     // nlp for crime detection
-    const res = await axios.post(
-      "http://localhost:8000/nlp",
-      { text: extractedText }
-    )
+  const res = await AI_API.post(
+  `${AI_BASE_URL}/nlp`,
+  { text: extractedText }
+  );
 
     setCrimeType(res.data.type)
     setIPC(res.data.ipc)
@@ -210,10 +213,10 @@ alert("Please describe the incident")
 return
 }
 
-const res = await axios.post(
-"http://localhost:8000/nlp",
-{ text:description }
-)
+const res = await AI_API.post(
+  "/nlp",
+  { text: description }
+);
 
 const type = res.data.type
 const ipcSections = res.data.ipc
@@ -751,13 +754,15 @@ if(file){
 formData.append("evidence",file)
 }
 
-const res = await axios.post(
-"http://localhost:5000/api/fir",
-formData,
-{
-headers:{ "Content-Type":"multipart/form-data" }
-}
-)
+const res = await API.post(
+  "/api/fir",
+  formData,
+  {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  }
+);
 
 setFirSrNo(res.data.firSrNo)
 
