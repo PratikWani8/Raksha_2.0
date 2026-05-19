@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Upload, MapPin, Send } from "lucide-react"
+import { BASE_URL } from "../api/api"
 import Swal from "sweetalert2"
 
 export default function Complaint() {
@@ -116,12 +117,12 @@ formData.append("location",location)
 formData.append("evidence",file)
 
 const res = await fetch(
-"http://localhost:5000/api/complaints",
-{
-method:"POST",
-body:formData
-}
-)
+  `${BASE_URL}/api/complaints`,
+  {
+    method: "POST",
+    body: formData,
+  }
+);
 
 const data = await res.json()
 
