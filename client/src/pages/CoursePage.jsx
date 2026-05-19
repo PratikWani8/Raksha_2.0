@@ -3,7 +3,7 @@ import axios from "axios"
 import { motion } from "framer-motion"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
-
+import API from "../api/api"
 import VideoCard from "../components/VideoCard"
 import CoursePlayer from "../components/CoursePlayer"
 import ProgressBar from "../components/ProgressBar"
@@ -20,55 +20,66 @@ const CoursePage = () => {
   const userId = localStorage.getItem("userId")
 
   // FETCH VIDEOS
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/videos")
-        setVideos(res.data)
-      } catch (err) {
-        console.error(err)
-      }
+useEffect(() => {
+
+  const fetchVideos = async () => {
+    try {
+
+      const res = await API.get("/api/videos");
+
+      setVideos(res.data);
+
+    } catch (err) {
+      console.error("Error fetching videos:", err);
     }
-    fetchVideos()
-  }, [])
+  };
+
+  fetchVideos();
+
+}, []);
 
   // FETCH USER
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        if (!userId) return
+useEffect(() => {
 
-        const res = await axios.get(
-          `http://localhost:5000/api/users/${userId}`
-        )
+  const fetchUser = async () => {
+    try {
 
-        setUsername(res.data.name)
-      } catch (err) {
-        console.error(err)
-        setUsername("Guest User")
-      }
+      if (!userId) return;
+
+      const res = await API.get(`/api/users/${userId}`);
+
+      setUsername(res.data.name);
+
+    } catch (err) {
+      console.error("Error fetching user:", err);
+
+      setUsername("Guest User");
     }
+  };
 
-    fetchUser()
-  }, [userId])
+  fetchUser();
+
+}, [userId]);
 
   // MARK COMPLETE
-  const markComplete = async (videoId) => {
-    try {
-      const res = await axios.post(
-        "http://localhost:5000/api/progress/update",
-        { userId, videoId }
-      )
+const markComplete = async (videoId) => {
+  try {
 
-      setCompleted(res.data.completedVideos)
+    const res = await API.post(
+      "/api/progress/update",
+      { userId, videoId }
+    );
 
-      if (res.data.completedVideos.length === 6) {
-        setShowCertificate(true)
-      }
-    } catch (err) {
-      console.error(err)
+    setCompleted(res.data.completedVideos);
+
+    if (res.data.completedVideos.length === 6) {
+      setShowCertificate(true);
     }
+
+  } catch (err) {
+    console.error("Error updating progress:", err);
   }
+};
 
   // DOWNLOAD CERTIFICATE (PDF)
   const downloadCertificate = async () => {
